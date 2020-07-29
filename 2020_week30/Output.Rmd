@@ -1,0 +1,121 @@
+---
+title: "Tidy Tuesday 2020 week 30"
+author: "Shayaan Ahmed Farooqi"
+date: "7/24/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidytuesdayR)
+library(ggplot2)
+library(tidyverse)
+library(lubridate)
+library(janitor)
+```
+```{r data_loading,cache=TRUE}
+tuesdata <- tidytuesdayR::tt_load(2020, week = 30)
+```
+
+```{r}
+animal_outcomes <- tuesdata$animal_outcomes
+animal_complaints <- tuesdata$animal_complaints
+brisbane_complaints <- tuesdata$brisbane_complaints
+```
+
+```{r EDA}
+# What ended up being the most common outcome for an animal?
+all_outcomes <- animal_outcomes %>%
+    select(outcome, Total) %>%
+    group_by(outcome) %>%
+    summarise(total_sum=sum(Total, na.rm = TRUE))
+
+ggplot(data=all_outcomes) +
+    aes(x=outcome, y=total_sum) +
+    geom_col()
+
+```
+```{r dog_outcomes}
+# What happened to the Dogs?
+all_outcomes <- animal_outcomes %>%
+    filter(animal_type=='Dogs') %>%
+    select(outcome, Total) %>%
+    group_by(outcome) %>%
+    summarise(total_sum=sum(Total, na.rm = TRUE))
+
+ggplot(data=all_outcomes) +
+    aes(x=outcome, y=total_sum) +
+    geom_col()
+```
+
+```{r cats_outcomes}
+# What happened to the Cats?
+all_outcomes <- animal_outcomes %>%
+    filter(animal_type=='Cats') %>%
+    select(outcome, Total) %>%
+    group_by(outcome) %>%
+    summarise(total_sum=sum(Total, na.rm = TRUE))
+
+ggplot(data=all_outcomes) +
+    aes(x=outcome, y=total_sum) +
+    geom_col()
+```
+
+```{r horses_outcomes}
+# What happened to the Horses?
+all_outcomes <- animal_outcomes %>%
+    filter(animal_type=='Horses') %>%
+    select(outcome, Total) %>%
+    group_by(outcome) %>%
+    summarise(total_sum=sum(Total, na.rm = TRUE))
+
+ggplot(data=all_outcomes) +
+    aes(x=outcome, y=total_sum) +
+    geom_col()
+```
+
+```{r livestock_outcomes}
+# What happened to the Livestock?
+all_outcomes <- animal_outcomes %>%
+    filter(animal_type=='Livestock') %>%
+    select(outcome, Total) %>%
+    group_by(outcome) %>%
+    summarise(total_sum=sum(Total, na.rm = TRUE))
+
+ggplot(data=all_outcomes) +
+    aes(x=outcome, y=total_sum) +
+    geom_col()
+```
+
+```{r wildlife_outcomes}
+# What happened to the Wildlife?
+all_outcomes <- animal_outcomes %>%
+    filter(animal_type=='Wildlife') %>%
+    select(outcome, Total) %>%
+    group_by(outcome) %>%
+    summarise(total_sum=sum(Total, na.rm = TRUE))
+
+ggplot(data=all_outcomes) +
+    aes(x=outcome, y=total_sum) +
+    geom_col()
+```
+
+```{r everything_else_outcomes}
+# What happened to Everything else?
+all_outcomes <- animal_outcomes %>%
+    filter(animal_type=='Other Animals') %>%
+    select(outcome, Total) %>%
+    group_by(outcome) %>%
+    summarise(total_sum=sum(Total, na.rm = TRUE))
+
+ggplot(data=all_outcomes) +
+    aes(x=outcome, y=total_sum) +
+    geom_col()
+```
+
+
+
+

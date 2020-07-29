@@ -1,0 +1,146 @@
+---
+title: "Penguins with Silge"
+author: "Shayaan Ahmed Farooqi"
+date: "7/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache=TRUE, warning=FALSE,
+                      message=FALSE, dpi=180,fig.width=8, fig.height = 5)
+library(tidyverse)
+
+```
+
+[Source is youtube video.](https://www.youtube.com/watch?v=z57i2GVcdww)
+
+# Explore data
+
+```{r}
+library(palmerpenguins)
+
+penguins %>%
+    filter(!is.na(sex)) %>%
+    ggplot(aes(flipper_length_mm, bill_length_mm, color=sex, size=body_mass_g)) +
+    geom_point(alpha=0.7) + 
+    facet_wrap(~species)
+```
+
+```{r}
+penguins_df <- penguins %>%
+    filter(!is.na(sex)) %>%
+    select(-year, -island)
+```
+
+# Build model
+
+```{r}
+library(tidymodels)
+set.seed(123)
+
+penguins_split <- initial_split(penguins_df, strata=sex)
+# strata determines the class that we would like to balance, this makes sure that the training/test sets will have the same proportions of penguins by sex.
+
+penguin_train <- training(penguins_split)
+penguin_test <- testing(penguins_split)
+
+# Since the dataset we have is very small and we want to check the performance of different models,  we are going to do resampling to increase the size of our dataset.
+set.seed(234)
+penguin_boot <- bootstraps(penguin_train)
+penguin_boot
+
+
+```
+
+```{r}
+glm_spec <- logistic_reg() %>%
+    set_engine('glm')
+
+rf_spec <- rand_forest() %>%
+    set_mode('classification') %>%
+    set_engine('ranger')
+```
+
+```{r}
+penguin_wf <- workflow() %>%
+    add_formula(sex ~ .)
+```
+
+```{r}
+glm_rs <- penguin_wf %>%
+    add_model(glm_spec) %>%
+    fit_resamples(
+        resamples = penguin_boot, 
+        control = control_resamples(save_pred=TRUE, verbose=TRUE)
+        )
+
+rf_rs <- penguin_wf %>%
+    add_model(rf_spec) %>%
+    fit_resamples(
+        resamples = penguin_boot, 
+        control = control_resamples(save_pred=TRUE, verbose=TRUE)
+        )
+```
+
+# Evaluate models
+
+```{r}
+collect_metrics(rf_rs)
+```
+
+```{r}
+collect_metrics(glm_rs)
+```
+
+```{r}
+glm_rs %>%
+    conf_mat_resampled()
+```
+```{r}
+glm_rs %>%
+    collect_predictions() %>%
+    group_by(id) %>%
+    roc_curve(sex, .pred_female) %>%
+    ggplot(aes(1-specificity, sensitivity, color=id)) +
+    geom_abline(lty = 2, color='gray80', size=1.5) +
+    geom_path(show.legend = FALSE, alpha=0.6, size=1.2)+
+    coord_equal()
+```
+```{r}
+penguin_final <- penguin_wf %>%
+    add_model(glm_spec) %>%
+    last_fit(penguins_split)
+
+penguin_final
+```
+
+```{r}
+penguin_final$.workflow[[1]] %>%
+    tidy(exponentiate=TRUE) %>%
+    arrange(estimate)
+```
+
+# Interpretation / Conclusion
+
+We see that the highest value for the odds is for the estimate of bill_depth_mm with a value of ~4. What this means is that for every 1mm increase in bill depth, the odds of the sex being male increase 
+
+We also see from the p-values that the islands and the flipper_length are not important, since they have high p-values. This was actually accidental, I intended to remove the islands from the data but forgot to put the - sign in the select query for the penguin_df.
+
+So if we try plotting bill length vs bill depth we should see an easier distinction in the male and females. Lets see both graphs of bill length vs flipper length and bill length vs  bill depth and see which separates the sexes better.
+
+```{r}
+penguins_df %>%
+    ggplot(aes(bill_depth_mm, sex,  color=sex)) +
+    geom_point(alpha=0.7) +
+    facet_wrap(~species)
+
+penguins_df %>%
+    ggplot(aes(flipper_length_mm, sex,  color=sex)) +
+    geom_point(alpha=0.7) +
+    facet_wrap(~species)
+```
+From the graphs its hard to tell visually that bill depth is actually a much better predictor for sex, but it does make it apparent that it is better.
+
+
+
+
